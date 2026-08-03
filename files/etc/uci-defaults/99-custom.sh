@@ -43,7 +43,6 @@ echo "Board detected: $board_name" >>$LOGFILE
 
 wan_ifname=""
 lan_ifnames=""
-# 此处特殊处理个别开发板网口顺序问题
 case "$board_name" in
     "radxa,e20c"|"friendlyarm,nanopi-r5c")
         wan_ifname="eth1"
@@ -51,9 +50,15 @@ case "$board_name" in
         echo "Using $board_name mapping: WAN=$wan_ifname LAN=$lan_ifnames" >>"$LOGFILE"
         ;;
     *)
-        # 默认第一个接口为WAN，其余为LAN
-        wan_ifname=$(echo "$ifnames" | awk '{print $1}')
-        lan_ifnames=$(echo "$ifnames" | cut -d ' ' -f2-)
+        # 默认 eth2 为 WAN，其余为 LAN
+        wan_ifname="eth2"
+        lan_ifnames=""
+        for port in $ifnames; do
+            if [ "$port" != "$wan_ifname" ]; then
+                lan_ifnames="$lan_ifnames $port"
+            fi
+        done
+        lan_ifnames=$(echo "$lan_ifnames" | awk '{$1=$1};1')
         echo "Using default mapping: WAN=$wan_ifname LAN=$lan_ifnames" >>"$LOGFILE"
         ;;
 esac
@@ -105,8 +110,8 @@ elif [ "$count" -gt 1 ]; then
         uci set network.lan.ipaddr=$CUSTOM_IP
         echo "custom router ip is $CUSTOM_IP" >> $LOGFILE
     else
-        uci set network.lan.ipaddr='192.168.100.1'
-        echo "default router ip is 192.168.100.1" >> $LOGFILE
+        uci set network.lan.ipaddr='192.168.55.1'
+        echo "default router ip is 192.168.55.1" >> $LOGFILE
     fi
 
     # PPPoE设置
